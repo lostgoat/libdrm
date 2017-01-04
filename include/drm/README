@@ -121,8 +121,7 @@ r128_drm.h
  - Broken compat ioctls.
 
 radeon_drm.h
- - Missing RADEON_TILING_R600_NO_SCANOUT, CIK_TILE_MODE_*, broken UMS ioctls,
-using stdint types.
+ - Missing RADEON_TILING_R600_NO_SCANOUT, CIK_TILE_MODE_*, broken UMS ioctls.
  - Both kernel and libdrm: missing padding -
 drm_radeon_gem_{create,{g,s}et_tiling,set_domain} others ?
 Status: ?
