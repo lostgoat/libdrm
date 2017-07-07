@@ -52,6 +52,7 @@ extern "C" {
 #define DRM_AMDGPU_GEM_USERPTR		0x11
 #define DRM_AMDGPU_WAIT_FENCES		0x12
 #define DRM_AMDGPU_VM			0x13
+#define DRM_AMDGPU_SCHED		0x14
 
 #define DRM_IOCTL_AMDGPU_GEM_CREATE	DRM_IOWR(DRM_COMMAND_BASE + DRM_AMDGPU_GEM_CREATE, union drm_amdgpu_gem_create)
 #define DRM_IOCTL_AMDGPU_GEM_MMAP	DRM_IOWR(DRM_COMMAND_BASE + DRM_AMDGPU_GEM_MMAP, union drm_amdgpu_gem_mmap)
@@ -67,6 +68,7 @@ extern "C" {
 #define DRM_IOCTL_AMDGPU_GEM_USERPTR	DRM_IOWR(DRM_COMMAND_BASE + DRM_AMDGPU_GEM_USERPTR, struct drm_amdgpu_gem_userptr)
 #define DRM_IOCTL_AMDGPU_WAIT_FENCES	DRM_IOWR(DRM_COMMAND_BASE + DRM_AMDGPU_WAIT_FENCES, union drm_amdgpu_wait_fences)
 #define DRM_IOCTL_AMDGPU_VM		DRM_IOWR(DRM_COMMAND_BASE + DRM_AMDGPU_VM, union drm_amdgpu_vm)
+#define DRM_IOCTL_AMDGPU_SCHED		DRM_IOW(DRM_COMMAND_BASE + DRM_AMDGPU_SCHED, union drm_amdgpu_sched)
 
 #define AMDGPU_GEM_DOMAIN_CPU		0x1
 #define AMDGPU_GEM_DOMAIN_GTT		0x2
@@ -162,13 +164,22 @@ union drm_amdgpu_bo_list {
 /* unknown cause */
 #define AMDGPU_CTX_UNKNOWN_RESET	3
 
+/* Context priority level */
+#define AMDGPU_CTX_PRIORITY_UNSET       -2048
+#define AMDGPU_CTX_PRIORITY_LOW_HW      -1023
+#define AMDGPU_CTX_PRIORITY_LOW_SW      -512
+#define AMDGPU_CTX_PRIORITY_NORMAL      0
+/* Selecting a priority above NORMAL requires CAP_SYS_NICE or DRM_MASTER */
+#define AMDGPU_CTX_PRIORITY_HIGH_SW     512
+#define AMDGPU_CTX_PRIORITY_HIGH_HW     1023
+
 struct drm_amdgpu_ctx_in {
 	/** AMDGPU_CTX_OP_* */
 	__u32	op;
 	/** For future use, no flags defined so far */
 	__u32	flags;
 	__u32	ctx_id;
-	__u32	_pad;
+	__s32	priority;
 };
 
 union drm_amdgpu_ctx_out {
@@ -210,6 +221,21 @@ struct drm_amdgpu_vm_out {
 union drm_amdgpu_vm {
 	struct drm_amdgpu_vm_in in;
 	struct drm_amdgpu_vm_out out;
+};
+
+/* sched ioctl */
+#define AMDGPU_SCHED_OP_PROCESS_PRIORITY_OVERRIDE	1
+
+struct drm_amdgpu_sched_in {
+	/* AMDGPU_SCHED_OP_* */
+	__u32	op;
+	__u32	fd;
+	__s32	priority;
+	__u32	flags;
+};
+
+union drm_amdgpu_sched {
+	struct drm_amdgpu_sched_in in;
 };
 
 /*
@@ -764,6 +790,7 @@ struct drm_amdgpu_info_device {
 	__u64 max_memory_clock;
 	/* cu information */
 	__u32 cu_active_number;
+	/* NOTE: cu_ao_mask is INVALID, DON'T use it */
 	__u32 cu_ao_mask;
 	__u32 cu_bitmap[4][4];
 	/** Render backend pipe mask. One render backend is CB+DB. */
@@ -818,6 +845,8 @@ struct drm_amdgpu_info_device {
 	/* max gs wavefront per vgt*/
 	__u32 max_gs_waves_per_vgt;
 	__u32 _pad1;
+	/* always on cu bitmap */
+	__u32 cu_ao_bitmap[4][4];
 };
 
 struct drm_amdgpu_info_hw_ip {
